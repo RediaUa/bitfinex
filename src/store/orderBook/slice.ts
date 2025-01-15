@@ -1,8 +1,13 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { State } from './types'
+import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
+import { State, OrderBookData, OrderBookEntity, PrecisionType } from './types'
+import { DEFAULT_PRECISION } from './constants'
+import { getUpdatedOrderBook } from './utils'
 
 const initialState: State = {
   isConnected: false,
+  chanId: null,
+  precision: DEFAULT_PRECISION, 
+  data: { bids: [], asks: [] },
 };
 
 const orderBookSlice = createSlice({
@@ -15,8 +20,26 @@ const orderBookSlice = createSlice({
     disconnect: (state) => {
       state.isConnected = false
     },
+    setPrecision: (state, action: PayloadAction<PrecisionType>) => {
+      state.precision = action.payload
+    },
+    setChannel: (state, action: PayloadAction<number | null>) => {
+      state.chanId = action.payload
+    },
+    setSnapshot: (state, action: PayloadAction<OrderBookData>) => {
+      state.data = action.payload
+    },
+    updateSnapshot: (state, action: PayloadAction<OrderBookEntity>) => {
+      const entity = action.payload[1]
+      state.data = getUpdatedOrderBook(entity, state.data)
+    }
   },
 });
 
-export const { connect, disconnect } = orderBookSlice.actions;
+
+export const initWs = createAction('orderBook/initWs');
+export const destroyWs = createAction('orderBook/destroyWs');
+export const initUpdatePrecision = createAction<PrecisionType>('orderBook/updatePrecision');
+
+export const { connect, disconnect, setSnapshot, setChannel, updateSnapshot, setPrecision } = orderBookSlice.actions;
 export const orderBookReducer = orderBookSlice.reducer;
