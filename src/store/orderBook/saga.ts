@@ -4,8 +4,8 @@ import { PayloadAction } from '@reduxjs/toolkit'
 import { connect, disconnect, destroyWs, initWs, setSnapshot, updateSnapshot, setChannel, setPrecision, initUpdatePrecision } from './slice'
 import { isSnapshot, handleSnapshotMessage, isOrderBookMessage } from './utils'
 import { PUBLIC_API } from './constants'
-import { EmitEventTypeEnum, SocketEvent, OrderBookData, PrecisionType } from './types'
-import { DEFAULT_PRECISION, SUBSCRIBE_DATA } from './constants'
+import { EmitEventTypeEnum, SocketEvent, OrderBookData, PrecisionType, OrderBookItem } from './types'
+import { DEFAULT_PRECISION, SUBSCRIBE_DATA, UPDATE_INTERVAL } from './constants'
 
 import WebSocketService from '../../core/services/ws'
 
@@ -44,6 +44,9 @@ const createWSService = (): WsServiceReturn => {
 }
 
 const watchWSServiceSaga = (channel: EventChannel<SocketEvent>) => function* () {
+  let orderBookBuffer: OrderBookItem[] = []
+  let updatedAt: number = Date.now()
+
   try {
     while(true) {
       const event: SocketEvent = yield take(channel);
@@ -67,11 +70,17 @@ const watchWSServiceSaga = (channel: EventChannel<SocketEvent>) => function* () 
               const payload = handleSnapshotMessage(message)
               yield put(setSnapshot(payload));
             } else {
-              // TODO update bunch of entites
+              // bunch of entites
+              yield put(updateSnapshot(message[1]));
             }
           } else {
-            // update single entity
-            yield put(updateSnapshot(message));
+            // collect single entities to bunch
+            orderBookBuffer.push(message[1])
+            if (Date.now() - updatedAt > UPDATE_INTERVAL) {
+              yield put(updateSnapshot(orderBookBuffer));
+              orderBookBuffer = []
+              updatedAt = Date.now()
+            }
           }
         }
       }
@@ -83,6 +92,8 @@ const watchWSServiceSaga = (channel: EventChannel<SocketEvent>) => function* () 
       if(event.type === EmitEventTypeEnum.unsubscribe) {
         yield put(setChannel(event.payload as null))
         yield put(setSnapshot({ bids: [], asks: [] }))
+        // clear buffer
+        orderBookBuffer = []
       }
     }
   } finally {

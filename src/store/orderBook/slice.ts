@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
-import { State, OrderBookData, OrderBookEntity, PrecisionType } from './types'
+import { State, OrderBookData, PrecisionType, OrderBookItem } from './types'
 import { DEFAULT_PRECISION } from './constants'
 import { getUpdatedOrderBook } from './utils'
 
@@ -29,9 +29,8 @@ const orderBookSlice = createSlice({
     setSnapshot: (state, action: PayloadAction<OrderBookData>) => {
       state.data = action.payload
     },
-    updateSnapshot: (state, action: PayloadAction<OrderBookEntity>) => {
-      const entity = action.payload[1]
-      state.data = getUpdatedOrderBook(entity, state.data)
+    updateSnapshot: (state, action: PayloadAction<OrderBookItem[]>) => {
+      state.data = getUpdatedOrderBook(action.payload, state.data)
     }
   },
 });

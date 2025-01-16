@@ -29,31 +29,45 @@ export const handleSnapshotMessage = (message: OrderBookSnapshot): OrderBookData
   return { asks, bids } 
 }
 
-const updateOrderBookByKey = (state: OrderBookData, key: 'bids' | 'asks', entity: OrderBookItem) => {
-  const [price, count] = entity
+const updateOrderBookByKey = (state: OrderBookData, key: 'bids' | 'asks', entities: OrderBookItem[]) => {
+  for (const entity of entities) {
+    const [price, count] = entity;
 
-  if (count > 0) {
-    const index = state[key].findIndex((item) => price === item[0])
+    if (count > 0) {
+      const index = state[key].findIndex((item) => price === item[0]);
 
-    if (index === -1) {
-      // create
-      state[key].push(entity)
-    } else {
-      // update
-      state[key][index] = entity
+      if (index === -1) {
+        // Create new entry
+        state[key].push(entity);
+      } else {
+        // Update existing entry
+        state[key][index] = entity;
+      }
+    } else if (count === 0) {
+      // Delete entry
+      state[key] = state[key].filter((item) => item[0] !== price);
     }
-  } else if (count === 0) {
-    // delete
-    state[key] = state[key].filter((item) => item[0] !== price);
   }
 
-  return { ...state }
+  return { ...state };
 }
 
-export const getUpdatedOrderBook = (data: OrderBookItem, orderBook: OrderBookData) => {
-  const [_, __, amount] = data
-  const key = amount > 0 ? 'bids' : 'asks'
+export const getUpdatedOrderBook = (data: OrderBookItem[], orderBook: OrderBookData) => {
+  const bids: OrderBookItem[] = [];
+  const asks: OrderBookItem[] = [];
+
+  for (const item of data) {
+    const [,, amount] = item;
+    if (amount > 0) {
+      bids.push(item);
+    } else {
+      asks.push(item);
+    }
+  }
   
-  return updateOrderBookByKey(orderBook, key, data)
+  return {
+    ...updateOrderBookByKey(orderBook, 'bids', bids),
+    ...updateOrderBookByKey(orderBook, 'asks', asks),
+  };
 
 }
