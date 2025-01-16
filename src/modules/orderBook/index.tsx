@@ -5,7 +5,7 @@ import { initWs, destroyWs } from '../../store/orderBook/slice'
 import Row from './components/Row'
 import Header from './components/ListHeader'
 import Controls from './components/Controls'
-import { prepareOrderBookData, keyExtractor } from './utils'
+import { prepareOrderBookData, keyExtractor, getItemLayout } from './utils'
 import { OrderBookListItem } from './types'
 
 const renderItem: ListRenderItem<OrderBookListItem> = ({ item }) => <Row {...item } />
@@ -58,6 +58,7 @@ const OrderBook: FC = () => {
         style={styles.flatList}
         contentContainerStyle={styles.contentContainer}
         keyExtractor={keyExtractor}
+        getItemLayout={getItemLayout}
         renderItem={renderItem}
         data={data}
       />

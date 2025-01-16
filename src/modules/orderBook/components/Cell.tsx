@@ -1,19 +1,19 @@
 import { FC, memo } from 'react'
 import { StyleSheet, View, Text } from 'react-native'
-import { OrderBookItem } from '../../../store/orderBook/types'
 
 interface CellProps {
-  data: OrderBookItem
+  count: number
+  amount: number
   isReversed?: boolean
 }
 
-const roundAmount = (amount?: number) => amount && amount.toFixed(4)
+const formatAmount = (amount?: number) => amount && Math.abs(amount).toFixed(4)
 
-const Cell: FC<CellProps> = ({ data, isReversed }) => {
+const Cell: FC<CellProps> = ({ count, amount, isReversed }) => {
   return ( 
     <View style={[styles.cell, isReversed && styles.reversedCell]}>
-      <Text style={styles.text}>{data[0]}</Text>
-      <Text style={styles.text}>{roundAmount(data[2])}</Text>
+      <Text style={styles.text}>{count}</Text>
+      <Text style={styles.text}>{formatAmount(amount)}</Text>
     </View>
   )
 }

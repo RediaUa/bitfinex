@@ -1,8 +1,16 @@
 
+import { ROW_HEIGHT } from '../constants'
 import { OrderBookData } from '../../store/orderBook/types'
 import { OrderBookListItem } from './types'
 
 export const keyExtractor = (item: OrderBookListItem) => item.bid.join() + item.ask.join()
+export const getItemLayout = (_: ArrayLike<OrderBookListItem> | null | undefined, index: number) => {
+  return {
+    length: ROW_HEIGHT,
+    offset: ROW_HEIGHT * index,
+    index,
+  };
+}
 
 export const prepareOrderBookData = ({ bids, asks }: OrderBookData) => {
   // sort by price desc
