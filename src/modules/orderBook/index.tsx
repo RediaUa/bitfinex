@@ -1,5 +1,5 @@
 import { FC, useCallback, useMemo, useEffect } from 'react'
-import { Text, Button, FlatList, ListRenderItem, StyleSheet } from 'react-native'
+import { Text, Button, FlatList, ListRenderItem, StyleSheet, ActivityIndicator } from 'react-native'
 import { useAppSelector, useAppDispatch } from '../../store'
 import { initWs, destroyWs } from '../../store/orderBook/slice'
 import Row from './components/Row'
@@ -13,6 +13,7 @@ const renderItem: ListRenderItem<OrderBookListItem> = ({ item }) => <Row {...ite
 const OrderBook: FC = () => {
   const dispatch = useAppDispatch()
   const isConnected = useAppSelector(state => state.orderBook.isConnected)
+  const channel = useAppSelector(state => state.orderBook.chanId)
   const orderBookData = useAppSelector(state => state.orderBook.data)
 
   useEffect(() => {
@@ -33,6 +34,17 @@ const OrderBook: FC = () => {
       />)
   }, [isConnected, handleConnectBtn])
 
+  const isLoading = isConnected && !channel
+
+  const ListFooter = useMemo(() => {
+    if (isLoading) {
+      return <ActivityIndicator size="large" color={styles.text.color} />
+    }
+
+    return null
+  }
+  , [isLoading])
+
   const data = useMemo(() => prepareOrderBookData(orderBookData), [orderBookData])
 
   return (
@@ -42,6 +54,7 @@ const OrderBook: FC = () => {
       {isConnected && <Controls />}
       <FlatList<OrderBookListItem>
         ListHeaderComponent={<Header />}
+        ListFooterComponent={ListFooter}
         style={styles.flatList}
         contentContainerStyle={styles.contentContainer}
         keyExtractor={keyExtractor}
