@@ -1,5 +1,5 @@
 import { FC, useCallback, useMemo, useEffect } from 'react'
-import { Text, Button, FlatList, ListRenderItem, StyleSheet, ActivityIndicator } from 'react-native'
+import { Text, Button, FlatList, ListRenderItem, StyleSheet, ActivityIndicator, Alert } from 'react-native'
 import { useAppSelector, useAppDispatch } from '../../store'
 import { initWs, destroyWs } from '../../store/orderBook/slice'
 import Row from './components/Row'
@@ -13,8 +13,15 @@ const renderItem: ListRenderItem<OrderBookListItem> = ({ item }) => <Row {...ite
 const OrderBook: FC = () => {
   const dispatch = useAppDispatch()
   const isConnected = useAppSelector(state => state.orderBook.isConnected)
+  const error = useAppSelector(state => state.orderBook.error)
   const channel = useAppSelector(state => state.orderBook.chanId)
   const orderBookData = useAppSelector(state => state.orderBook.data)
+
+  useEffect(() => {
+    if (!error) return
+
+    Alert.alert('Something went wrong', error);
+  }, [error])
 
   useEffect(() => {
     dispatch(initWs())

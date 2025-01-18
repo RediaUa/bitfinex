@@ -5,6 +5,7 @@ import { getUpdatedOrderBook } from './utils'
 
 const initialState: State = {
   isConnected: false,
+  error: null,
   chanId: null,
   options: DEFAULT_OPTIONS, 
   data: { bids: [], asks: [] },
@@ -23,6 +24,9 @@ const orderBookSlice = createSlice({
     updateOptions: (state, action: PayloadAction<Partial<Options>>) => {
       state.options = { ...state.options, ...action.payload  }
     },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload
+    },
     setChannel: (state, action: PayloadAction<number | null>) => {
       state.chanId = action.payload
     },
@@ -40,5 +44,14 @@ export const initWs = createAction('orderBook/initWs');
 export const destroyWs = createAction('orderBook/destroyWs');
 export const initUpdateOptions = createAction<Partial<Options>>('orderBook/initUpdateOptions');
 
-export const { connect, disconnect, setSnapshot, setChannel, updateSnapshot, updateOptions } = orderBookSlice.actions;
+export const {
+   connect,
+   disconnect,
+   setSnapshot,
+   setChannel, 
+   updateSnapshot, 
+   updateOptions,
+   setError
+  } = orderBookSlice.actions;
+
 export const orderBookReducer = orderBookSlice.reducer;

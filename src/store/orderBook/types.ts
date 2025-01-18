@@ -21,6 +21,7 @@ export type Options = {
 
 export type State = {
   isConnected: boolean;
+  error: string | null
   chanId: number | null;
   options: Options
   data: OrderBookData
@@ -32,6 +33,7 @@ export enum EmitEventTypeEnum  {
   subscribe = 'subscribe',
   unsubscribe = 'unsubscribe',
   message = 'message',
+  error = 'error',
 }
 
 export interface SocketEvent {

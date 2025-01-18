@@ -5,11 +5,23 @@ import {
   takeLeading, 
   take, select, 
   cancel, 
-  fork 
+  fork,
+  all
 } from 'redux-saga/effects';
 import { eventChannel, Task, EventChannel } from 'redux-saga';
 import { PayloadAction } from '@reduxjs/toolkit'
-import { connect, disconnect, destroyWs, initWs, setSnapshot, updateSnapshot, setChannel, updateOptions, initUpdateOptions } from './slice'
+import { 
+  connect,
+  disconnect,
+  destroyWs,
+  initWs,
+  setSnapshot,
+  updateSnapshot,
+  setChannel,
+  updateOptions,
+  initUpdateOptions,
+  setError,
+ } from './slice'
 import { isSnapshot, handleSnapshotMessage, isOrderBookMessage } from './utils'
 import { PUBLIC_API } from './constants'
 import { EmitEventTypeEnum, SocketEvent, OrderBookData, Options, OrderBookItem } from './types'
@@ -38,6 +50,9 @@ const createWSService = (): WsServiceReturn => {
     });
     wsService.addListener('unsubscribe', () => {
       emit({ type: EmitEventTypeEnum.unsubscribe, payload: null })
+    });
+    wsService.addListener('error', (event) => {
+      emit({ type: EmitEventTypeEnum.error, payload: event })
     });
 
     return () => {
@@ -93,15 +108,24 @@ const watchWSServiceSaga = (channel: EventChannel<SocketEvent>) => function* () 
         }
       }
   
-      if(event.type === EmitEventTypeEnum.subscribe) {
+      if (event.type === EmitEventTypeEnum.subscribe) {
         yield put(setChannel(event.payload as number))
       }
 
-      if(event.type === EmitEventTypeEnum.unsubscribe) {
+      if (event.type === EmitEventTypeEnum.unsubscribe) {
         yield put(setChannel(event.payload as null))
         yield put(setSnapshot({ bids: [], asks: [] }))
         // clear buffer
         orderBookBuffer = []
+      }
+
+      if (event.type === EmitEventTypeEnum.error) {
+        const payload = event.payload
+
+        if (payload instanceof Error) {
+          yield put(setError(payload.message))
+        }
+        // TODO hadle native errors
       }
     }
   } finally {
@@ -124,6 +148,16 @@ function* watchUpdateOptionsSaga(wsService: WebSocketService) {
     });
 }
 
+function* resetOrderBookState() {
+  yield all([
+    put(setSnapshot({ bids: [], asks: [] })),
+    put(updateOptions(DEFAULT_OPTIONS)),
+    put(disconnect()),
+    put(setChannel(null)),
+    put(setError(null)),
+  ]);
+}
+
 export function* orderBookSaga() {
   yield takeLatest(initWs.type, function* () {
     const { channel, wsService }: WsServiceReturn = yield call(createWSService);
@@ -136,9 +170,6 @@ export function* orderBookSaga() {
     yield cancel(wsTask);
     yield cancel(watchOptionsTask);
 
-    yield put(setSnapshot({ bids: [], asks: [] }))
-    yield put(updateOptions(DEFAULT_OPTIONS))
-    yield put(disconnect())
-    yield put(setChannel(null))
+    yield call(resetOrderBookState)
   });
 }
