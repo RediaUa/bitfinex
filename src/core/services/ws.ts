@@ -1,8 +1,8 @@
 import { isEventObject, parseSubscribeMessage } from './utils' 
 
 const MAX_ATTEMPS_COUNT = 5;
-const BASE_RECONNECT_INTERVAL = 1000;
-const WAIT_FOR_TIME = 3000;
+const WAIT_FOR_OPEN_ON_RECONNECT_TIME = 500;
+const DEFAULT_WAIT_FOR_TIME = 3000;
 
 type Messsage = string | ArrayBuffer | ArrayBufferView | Blob
 
@@ -10,20 +10,19 @@ type ListenerTypeToEventMap = {
   open: void;
   close: WebSocketCloseEvent;
   message: WebSocketMessageEvent;
-  error: Event;
+  error: Event | Error;
   subscribe: number
   unsubscribe: number
 };
 
 type ListenerType = keyof ListenerTypeToEventMap
-type ListenerCallback<Type extends ListenerType, ReturnType = void> = (event: ListenerTypeToEventMap[Type]) => ReturnType
+type ListenerCallback<Type extends ListenerType, ReturnType = void> = (event: ListenerTypeToEventMap[Type]) => ReturnType | Promise<ReturnType>
 
 type WaitForOptions<Event = unknown> = { time: number, checkIsNeededEvent?: (event: Event) => boolean}
 
 class WebSocketServiceBase {
   private _reconnectId: NodeJS.Timeout | null = null;
   private _shouldReconnectOnClose: boolean = true
-  private _isConnected: boolean = false;
 
   private url: string
   private ws: WebSocket | null = null;
@@ -31,7 +30,7 @@ class WebSocketServiceBase {
   
   constructor(url: string) {
     this.url = url;
-    this.ws = this.connect(url);
+    this.connect(url);
   }
 
   addListener = <Type extends ListenerType>(type: Type, listener: ListenerCallback<Type>): number => {
@@ -69,28 +68,37 @@ class WebSocketServiceBase {
     ws.onopen = this.onOpen;
     ws.onclose = this.onClose;
     ws.onmessage = this.onMessage;
-    ws.onerror = this.onError;
-
-    return ws
+    ws.onerror = this.onError;  
+    this.ws = ws
   }
 
-  reconnect = () => {
-    // TODO maybe reject if unsucesfull
+  /**
+   * Attempts to restore connection
+   * 
+   * Resolves with `true` if it's successful, otherwise resolves with `false` after reaching max attempts
+   * 
+   * * The delay between attempts increases proportionally to the attempt count
+   */
+  reconnect = (): Promise<boolean> => new Promise((resolve) => {
     const tryToReconnect = (attemps = 1) => {
- 
       this._reconnectId = setTimeout(() => {
         if (attemps <= MAX_ATTEMPS_COUNT) {
-          this.ws = this.connect(this.url)
+         this.connect(this.url)
+         this.waitFor('open', { time: WAIT_FOR_OPEN_ON_RECONNECT_TIME }).then(() => {
+          resolve(true)
+         }).catch(() => {
+          tryToReconnect(++attemps)
+         })
 
-          if (!this._isConnected) {
-            tryToReconnect(++attemps)
-          }
+         return 
         }
-      }, BASE_RECONNECT_INTERVAL * attemps)
+
+        resolve(false)
+      }, WAIT_FOR_OPEN_ON_RECONNECT_TIME * attemps)
     }
 
     tryToReconnect()
-  }
+  })
 
   stopReconnect = () => {
     if (this._reconnectId) {
@@ -117,10 +125,17 @@ class WebSocketServiceBase {
     }
   }
 
-  send = <TMessage extends Messsage = string>(message: TMessage) => {
-    if(this.ws && this.isConnected) {
-      this.ws.send(message);
+  send = async <TMessage extends Messsage = string> (message: TMessage) => {
+    if(!this.ws || !this.isConnected) {
+      const isSuccess = await this.reconnect()
+      
+      if (!isSuccess) {
+        this.notifyEvent('error', new Error('Unable to send message: Connection is dead'))  
+        return
+      }
     }
+
+    this.ws && this.ws.send(message);
   }
 
   notifyEvent = (type: ListenerType, event?: ListenerTypeToEventMap[ListenerType]) => {
@@ -133,20 +148,19 @@ class WebSocketServiceBase {
     if (this._reconnectId) {
       this.stopReconnect()
     }
-
-    this._isConnected = true;
     this.notifyEvent('open');
   };
 
-  onClose: ListenerCallback<'close'> = (event) => {
+  onClose: ListenerCallback<'close'> = async (event) => {
     if(this._shouldReconnectOnClose) {
       // if lose connection unexpectedly
       // try to restore it
-      this.reconnect();
-      return 
+      const isSuccess = await this.reconnect()
+      if (isSuccess) return 
+
+      this.notifyEvent('error', new Error('Connection is dead'))
     }
 
-    this._isConnected = false;
     this.notifyEvent('close', event);
     console.log('ws closed')
   }
@@ -165,7 +179,7 @@ class WebSocketServiceBase {
     return new Promise<ListenerTypeToEventMap[ListenerType] | Error>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject(new Error('Can not catch event!'))
-      }, time || WAIT_FOR_TIME)
+      }, time || DEFAULT_WAIT_FOR_TIME)
 
 
       listenerId = this.addListener(type, (event) => {
@@ -180,7 +194,7 @@ class WebSocketServiceBase {
   }
 
   get isConnected(): boolean {
-    return this._isConnected && Boolean(this.ws?.readyState === WebSocket.OPEN);
+    return Boolean(this.ws && this.ws.readyState === WebSocket.OPEN);
   }
 }
 class WebSocketService extends WebSocketServiceBase {
