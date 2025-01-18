@@ -1,11 +1,19 @@
-import { call, put, takeLatest, takeLeading, take, select, cancel, fork } from 'redux-saga/effects';
+import { 
+  call,
+  put,
+  takeLatest,
+  takeLeading, 
+  take, select, 
+  cancel, 
+  fork 
+} from 'redux-saga/effects';
 import { eventChannel, Task, EventChannel } from 'redux-saga';
 import { PayloadAction } from '@reduxjs/toolkit'
-import { connect, disconnect, destroyWs, initWs, setSnapshot, updateSnapshot, setChannel, setPrecision, initUpdatePrecision } from './slice'
+import { connect, disconnect, destroyWs, initWs, setSnapshot, updateSnapshot, setChannel, updateOptions, initUpdateOptions } from './slice'
 import { isSnapshot, handleSnapshotMessage, isOrderBookMessage } from './utils'
 import { PUBLIC_API } from './constants'
-import { EmitEventTypeEnum, SocketEvent, OrderBookData, PrecisionType, OrderBookItem } from './types'
-import { DEFAULT_PRECISION, SUBSCRIBE_DATA, UPDATE_INTERVAL } from './constants'
+import { EmitEventTypeEnum, SocketEvent, OrderBookData, Options, OrderBookItem } from './types'
+import { DEFAULT_OPTIONS, UPDATE_INTERVAL } from './constants'
 
 import WebSocketService from '../../core/services/ws'
 
@@ -15,7 +23,7 @@ type WsServiceReturn = {
 }
 
 const createWSService = (): WsServiceReturn => {
-  const wsService = new WebSocketService(PUBLIC_API, 'book', { symbol: 'tBTCUSD', prec: DEFAULT_PRECISION, FREQUENCY: 'F0' });
+  const wsService = new WebSocketService(PUBLIC_API, 'book', DEFAULT_OPTIONS);
 
   const channel = eventChannel<SocketEvent>((emit) => {
     wsService.addListener('open', () => emit({ type: EmitEventTypeEnum.open }));
@@ -101,12 +109,19 @@ const watchWSServiceSaga = (channel: EventChannel<SocketEvent>) => function* () 
   }
 }
 
-function* watchUpdatePrecisionSaga(wsService: WebSocketService) {
-  yield takeLeading(initUpdatePrecision.type, function* (action: PayloadAction<PrecisionType>) {
-    yield call(wsService.unsubscribe);
-    yield call(wsService.subscribe, 'book', { ...SUBSCRIBE_DATA, prec: action.payload });
-    yield put(setPrecision(action.payload))
-  });
+function* watchUpdateOptionsSaga(wsService: WebSocketService) {
+    yield takeLeading(initUpdateOptions.type, function* (action: PayloadAction<Partial<Options>>) {
+      const previousOptions: Options = yield select((state) => state.orderBook.options)
+      try {
+        yield put(updateOptions(action.payload))
+        yield call(wsService.unsubscribe);
+        yield call(wsService.subscribe, 'book', { ...previousOptions, ...action.payload });
+      } catch (e) {
+        // rollback options
+        yield put(updateOptions(previousOptions))
+        console.log('[watchUpdateOptionsSaga.catch]: ', e)
+      }
+    });
 }
 
 export function* orderBookSaga() {
@@ -114,17 +129,16 @@ export function* orderBookSaga() {
     const { channel, wsService }: WsServiceReturn = yield call(createWSService);
 
     const wsTask: Task = yield fork(watchWSServiceSaga(channel))
-    const precisionTask: Task = yield fork(watchUpdatePrecisionSaga, wsService);
+    const watchOptionsTask: Task = yield fork(watchUpdateOptionsSaga, wsService);
 
     yield take(destroyWs.type)
 
     yield cancel(wsTask);
-    yield cancel(precisionTask);
+    yield cancel(watchOptionsTask);
 
     yield put(setSnapshot({ bids: [], asks: [] }))
-    yield put(setPrecision(DEFAULT_PRECISION))
+    yield put(updateOptions(DEFAULT_OPTIONS))
     yield put(disconnect())
     yield put(setChannel(null))
   });
-
 }

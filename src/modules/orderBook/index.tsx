@@ -27,10 +27,10 @@ const OrderBook: FC = () => {
 
   const ConnectButton = useMemo(() => {
     return (
-      <Button 
-          title={isConnected ? 'Disconnect' : 'Connect'} 
-          color={isConnected ? '#F44336': '#4CAF50'}
-          onPress={handleConnectBtn}
+      <Button
+        title={isConnected ? 'Disconnect' : 'Connect'} 
+        color={isConnected ? '#F44336': '#4CAF50'}
+        onPress={handleConnectBtn}
       />)
   }, [isConnected, handleConnectBtn])
 
@@ -49,19 +49,22 @@ const OrderBook: FC = () => {
 
   return (
     <>
-      <Text style={styles.text}>Order Book</Text>
+      <Text style={[styles.text, { marginVertical: 6 }]}>Order Book</Text>
       {ConnectButton}
-      {isConnected && <Controls />}
-      <FlatList<OrderBookListItem>
-        ListHeaderComponent={<Header />}
-        ListFooterComponent={ListFooter}
-        style={styles.flatList}
-        contentContainerStyle={styles.contentContainer}
-        keyExtractor={keyExtractor}
-        getItemLayout={getItemLayout}
-        renderItem={renderItem}
-        data={data}
-      />
+      {isConnected && (
+        <>
+          <Controls />
+          <FlatList<OrderBookListItem>
+            ListHeaderComponent={<Header />}
+            ListFooterComponent={ListFooter}
+            style={styles.flatList}
+            contentContainerStyle={styles.contentContainer}
+            keyExtractor={keyExtractor}
+            getItemLayout={getItemLayout}
+            renderItem={renderItem}
+            data={data}
+        />
+      </>)}
     </>
   )
 }
@@ -70,6 +73,9 @@ const styles = StyleSheet.create({
   flatList: {
     flex: 1,
     width: '100%',
+  },
+  button: {
+    paddingVertical: 10
   },
   contentContainer: {
     padding: 16,

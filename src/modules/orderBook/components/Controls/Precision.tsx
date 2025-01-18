@@ -1,39 +1,39 @@
-import { FC, useMemo, memo, useCallback } from 'react'
+import { useMemo, useCallback, memo } from 'react'
 import { TouchableOpacity, Text, View, StyleSheet } from 'react-native'
-import { useAppSelector, useAppDispatch } from '../../../store'
-import { initUpdatePrecision } from '../../../store/orderBook/slice'
-import { PrecisionType as PrecisionType } from '../../../store/orderBook/types'
+import { useAppSelector, useAppDispatch } from '../../../../store'
+import { initUpdateOptions } from '../../../../store/orderBook/slice'
+import { Options } from '../../../../store/orderBook/types'
 
-interface Props {}
+type PrecisionType = Options['prec']
+const PRECISIONS: Options['prec'][]  = ['P0', 'P1', 'P2', 'P3', 'P4']
 
-const precisions: PrecisionType[]  = ['P0', 'P1', 'P2', 'P3', 'P4']
-
-const Controls: FC<Props> = () => {
+const Precision = () => {
   const dispatch = useAppDispatch()
-  const precision = useAppSelector(state => state.orderBook.precision)
-  const currentIndex = useMemo(() => precisions.findIndex(prec => prec === precision), [precision])
+  const precision = useAppSelector(state => state.orderBook.options.prec)
+  const currentIndex = useMemo(() => PRECISIONS.findIndex(prec => prec === precision), [precision])
 
-  const handleUpdatePrecision = useCallback((precision: PrecisionType) => {
-    dispatch(initUpdatePrecision(precision))
+  const handleUpdatePrecision = useCallback((prec: PrecisionType) => {
+    dispatch(initUpdateOptions({ prec }))
   }, [dispatch])
 
   const decrementPresicion = useCallback(() => {
-    if (currentIndex < precisions.length - 1) {
-      handleUpdatePrecision(precisions[currentIndex + 1]);
+    if (currentIndex < PRECISIONS.length - 1) {
+      handleUpdatePrecision(PRECISIONS[currentIndex + 1]);
     }
   }, [dispatch, currentIndex])
 
   const incrementPresicion = useCallback(() => {
     if (currentIndex > 0) {
-      handleUpdatePrecision(precisions[currentIndex - 1]);
+      handleUpdatePrecision(PRECISIONS[currentIndex - 1]);
     }
   }, [dispatch, currentIndex])
 
   const isIncrementDisabled = currentIndex === 0;
-  const isDecrementDisabled = currentIndex === precisions.length - 1;
-
+  const isDecrementDisabled = currentIndex === PRECISIONS.length - 1;
+  
   return (
-    <View style={styles.container}>
+    <>
+      <View style={styles.precision}>
         <TouchableOpacity hitSlop={8} disabled={isDecrementDisabled} onPress={decrementPresicion}>
           <Text style={[styles.text, isDecrementDisabled && styles.disabledText]}>{'.0<-'}</Text>
         </TouchableOpacity>
@@ -41,6 +41,7 @@ const Controls: FC<Props> = () => {
           <Text style={[styles.text, isIncrementDisabled && styles.disabledText]}>{'->.00'}</Text>
         </TouchableOpacity>
     </View>
+    </>
   )
 }
 
@@ -51,11 +52,11 @@ const styles = StyleSheet.create({
   disabledText: {
     color: '#546E7A'
   },
-  container: {
+  precision: {
     width: 80,
     flexDirection: 'row',
     justifyContent: 'space-between'
   }
 })
 
-export default memo(Controls)
+export default memo(Precision)

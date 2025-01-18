@@ -214,6 +214,7 @@ class WebSocketService extends WebSocketServiceBase {
       console.log('subscribed to ', channel, data.chanId)
     } catch (e) {
       console.log('Failed subscribe to ', channel)
+      throw e
     }
   }
 
@@ -240,6 +241,7 @@ class WebSocketService extends WebSocketServiceBase {
       console.log('unsubscribed from ', data.chanId)
     } catch (e) {
       console.log('Failed unsubscribe from ', this.chanId)
+      throw e
     }
 
   }
