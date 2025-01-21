@@ -1,7 +1,7 @@
 export type OrderBookItem = [price: number, count: number, amount: number];
 export type OrderBookSnapshot = [channelId: number, OrderBookItem[]];
 export type OrderBookEntity = [channelId: number, OrderBookItem]
-export type OrderBookData = { asks: OrderBookItem[], bids: OrderBookItem[] }
+export type OrderBookData<Item = OrderBookItem> = { asks: Item[], bids: Item[] }
 
 export enum SupportedPairs {
   btc_usd = 'tBTCUSD',

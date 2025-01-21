@@ -1,3 +1,3 @@
 import { OrderBookItem } from '../../store/orderBook/types'
 
-export type OrderBookListItem = { bid: OrderBookItem, ask: OrderBookItem }
+export type OrderBookItemWithTotal = [...OrderBookItem, total: number];

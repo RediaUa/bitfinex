@@ -1,19 +1,22 @@
 import { FC, memo } from 'react'
 import { StyleSheet, View } from 'react-native'
 import Cell from './Cell'
-import { ROW_HEIGHT } from '../../constants'
-import { OrderBookItem } from '../../../store/orderBook/types'
+import { ROW_HEIGHT, COLORS } from '../../constants'
+import { OrderBookItemWithTotal } from '../types'
 
 interface RowProps {
-  bid: OrderBookItem
-  ask: OrderBookItem
+  data: OrderBookItemWithTotal
+  depthScale: number
+  isBid: boolean
 }
 
-const Row: FC<RowProps> = ({ bid, ask }) => {  
+const Row: FC<RowProps> = ({ data, isBid, depthScale }) => {  
+  const [price, , amount] = data
+
   return (
-    <View style={styles.row}>
-      <Cell isReversed count={bid[0]} amount={bid[2]} />
-      <Cell count={ask[0]} amount={ask[2]} />
+    <View style={[styles.row, { flexDirection: isBid ? 'row-reverse' : 'row'}]}>
+      <View style={[styles.depthScale, { width: `${depthScale}%`, backgroundColor: isBid ? COLORS.green : COLORS.red }]} />
+      <Cell isReversed={isBid} price={price} amount={amount} />
     </View>
     )
 }
@@ -22,9 +25,13 @@ const styles = StyleSheet.create({
   row: {
     height: ROW_HEIGHT,
     flex: 1,
-    flexDirection: 'row',
     justifyContent: 'space-between',
+    position: 'relative'
   },
+  depthScale: {
+    height: '100%',
+    position: 'absolute'
+  }
 })
 
 export default memo(Row)

@@ -3,6 +3,7 @@ import { TouchableOpacity, Text, View, StyleSheet, FlatList, ListRenderItem } fr
 import { useAppSelector, useAppDispatch } from '../../../../store'
 import { initUpdateOptions } from '../../../../store/orderBook/slice'
 import { SupportedPairs } from '../../../../store/orderBook/types'
+import { COLORS } from '../../../constants'
 
 export const supportedPairsArray: SupportedPairs[] = Object.values(SupportedPairs);
 
@@ -68,10 +69,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   text: {
-    color: '#FFFF'
+    color: COLORS.white
   },
   activePair: {
-    color: '#4CAF50'
+    color: COLORS.green
   },
 })
 

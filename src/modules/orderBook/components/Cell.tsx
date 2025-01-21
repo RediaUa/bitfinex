@@ -1,19 +1,19 @@
 import { FC, memo } from 'react'
 import { StyleSheet, View, Text } from 'react-native'
+import { formatPrice, formatAmount } from '../utils' 
+import { COLORS } from '../../constants'
 
 interface CellProps {
-  count: number
+  price: number
   amount: number
   isReversed?: boolean
 }
 
-const formatAmount = (amount?: number) => amount && Math.abs(amount).toFixed(4)
-
-const Cell: FC<CellProps> = ({ count, amount, isReversed }) => {
+const Cell: FC<CellProps> = ({ price, amount, isReversed }) => {
   return ( 
     <View style={[styles.cell, isReversed && styles.reversedCell]}>
-      <Text style={styles.text}>{count}</Text>
-      <Text style={styles.text}>{formatAmount(amount)}</Text>
+      {price && <Text style={styles.text}>{formatPrice(price)}</Text>}
+      {amount && <Text style={styles.text}>{formatAmount(amount)}</Text>}
     </View>
   )
 }
@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     paddingRight: 12,
   },
   text: {
-    color: '#FFFF'
+    color: COLORS.white
   }
 })
 

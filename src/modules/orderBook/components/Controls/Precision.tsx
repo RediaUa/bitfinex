@@ -4,6 +4,8 @@ import { useAppSelector, useAppDispatch } from '../../../../store'
 import { initUpdateOptions } from '../../../../store/orderBook/slice'
 import { Options } from '../../../../store/orderBook/types'
 
+import { COLORS } from '../../../constants'
+
 type PrecisionType = Options['prec']
 const PRECISIONS: Options['prec'][]  = ['P0', 'P1', 'P2', 'P3', 'P4']
 
@@ -47,10 +49,10 @@ const Precision = () => {
 
 const styles = StyleSheet.create({
   text: {
-    color: '#FFFF'
+    color: COLORS.white
   },
   disabledText: {
-    color: '#546E7A'
+    color: COLORS.grey
   },
   precision: {
     width: 80,

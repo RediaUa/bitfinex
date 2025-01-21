@@ -6,9 +6,19 @@ import Row from './components/Row'
 import Header from './components/ListHeader'
 import Controls from './components/Controls'
 import { prepareOrderBookData, keyExtractor, getItemLayout } from './utils'
-import { OrderBookListItem } from './types'
+import { COLORS } from '../constants'
+import { OrderBookItemWithTotal } from './types'
 
-const renderItem: ListRenderItem<OrderBookListItem> = ({ item }) => <Row {...item } />
+const renderItem: (maxTotal: number) => ListRenderItem<OrderBookItemWithTotal> = maxTotal => ({ item, index }) => {
+  const [, , , total] = item
+  const depthScale = total ? (Math.abs(total) / maxTotal * 100) : 0
+  /* 
+    render items one by one in 2 columns
+     every even value is bid
+     every odd is ask 
+  */
+  return <Row depthScale={depthScale} data={item} isBid={index % 2 === 0} />
+}
 
 const OrderBook: FC = () => {
   const dispatch = useAppDispatch()
@@ -36,7 +46,7 @@ const OrderBook: FC = () => {
     return (
       <Button
         title={isConnected ? 'Disconnect' : 'Connect'} 
-        color={isConnected ? '#F44336': '#4CAF50'}
+        color={isConnected ? COLORS.red : COLORS.green}
         onPress={handleConnectBtn}
       />)
   }, [isConnected, handleConnectBtn])
@@ -52,7 +62,7 @@ const OrderBook: FC = () => {
   }
   , [isLoading])
 
-  const data = useMemo(() => prepareOrderBookData(orderBookData), [orderBookData])
+  const { data, maxTotal } = useMemo(() => prepareOrderBookData(orderBookData), [orderBookData])
 
   return (
     <>
@@ -61,15 +71,16 @@ const OrderBook: FC = () => {
       {isConnected && (
         <>
           <Controls />
-          <FlatList<OrderBookListItem>
+          <FlatList<OrderBookItemWithTotal>
             ListHeaderComponent={<Header />}
             ListFooterComponent={ListFooter}
             style={styles.flatList}
             contentContainerStyle={styles.contentContainer}
             keyExtractor={keyExtractor}
             getItemLayout={getItemLayout}
-            renderItem={renderItem}
+            renderItem={renderItem(maxTotal)}
             data={data}
+            numColumns={2}
         />
       </>)}
     </>

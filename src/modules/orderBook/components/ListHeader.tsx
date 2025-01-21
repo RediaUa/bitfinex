@@ -1,16 +1,18 @@
 import { FC, memo } from 'react'
 import { StyleSheet, View, Text } from 'react-native'
 
+import { COLORS } from '../../constants'
+
 const Row: FC = () => {
   return (
     <View style={[styles.mainRow]}>
         <View style={styles.row}>
-          <Text style={styles.text}>Total</Text>
+          <Text style={styles.text}>Amount</Text>
           <Text style={styles.text}>Price</Text>
         </View>
       <View style={styles.row}>
         <Text style={styles.text}>Price</Text>
-        <Text style={styles.text}>Total</Text>
+        <Text style={styles.text}>Amount</Text>
       </View>
     </View>)
 }
@@ -29,6 +31,6 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
   },
   text: {
-    color: '#546E7A'
+    color: COLORS.grey
   }
 })
