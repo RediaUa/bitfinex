@@ -3,7 +3,8 @@ import { ROW_HEIGHT } from '../constants'
 import { OrderBookData, OrderBookItem } from '../../store/orderBook/types'
 import { OrderBookItemWithTotal } from './types'
 
-export const keyExtractor = (item: OrderBookItemWithTotal) => item.join()
+// use index to prevent remounting rows
+export const keyExtractor = (_: OrderBookItemWithTotal, index: number) => index.toString()
 export const getItemLayout = (_: ArrayLike<OrderBookItemWithTotal> | null | undefined, index: number) => {
   return {
     length: ROW_HEIGHT,
